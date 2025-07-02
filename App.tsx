@@ -14,6 +14,7 @@ import {
 import { createNativeStackNavigator, NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Button } from '@react-navigation/elements';
+import Ionicons from '@react-native-vector-icons/ionicons';
 
 // function App() {
 //   const isDarkMode = useColorScheme() === 'dark';
@@ -45,6 +46,31 @@ const MyTabs = createBottomTabNavigator({
     Notifications: NotificationsScreen,
     Calendar: CalendarScreen,
   },
+  screenOptions: ({ route }) => ({
+    tabBarIcon: ({ focused, color, size }) => {
+      let iconName;
+
+      switch (route.name) {
+        case 'Home':
+          iconName = 'home';
+          break;
+        case 'Calendar':
+          iconName = 'calendar';
+          break;
+        case 'Notifications':
+          iconName = 'notifications';
+          break;
+        default:
+          iconName = 'alert';
+          break;
+      }
+
+      // You can return any component that you like here!
+      return <Ionicons name={iconName} size={size} color={color} />;
+    },
+    tabBarActiveTintColor: 'tomato',
+    tabBarInactiveTintColor: 'gray',
+  }),
 });
 
 
