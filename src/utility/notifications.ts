@@ -1,3 +1,5 @@
+import notifee, { TimestampTrigger, TriggerType, AuthorizationStatus } from '@notifee/react-native';
+import { storeNotification } from './storage';
 
 function dateToTrigger(date: Date): TimestampTrigger {
     const trigger: TimestampTrigger = {
@@ -7,12 +9,28 @@ function dateToTrigger(date: Date): TimestampTrigger {
     return trigger;
 }
 
-function schedule(channelId: string, trigger: TimestampTrigger): boolean {
+async function hasNotificationPermission(): Promise<boolean> {
+    const permission = await notifee.requestPermission();
+    if (permission.authorizationStatus >= AuthorizationStatus.AUTHORIZED) {
+        return true;
+    } else {
+        await notifee.openNotificationSettings();
+    }
+    return false;
+}
+
+
+async function schedule(
+    channelId: string,
+    trigger: TimestampTrigger,
+    category: string,
+    message: string
+): Promise<string> {
     // Schedule the notification
     const notificationId = await notifee.createTriggerNotification(
         {
-            title: 'Scheduled Notification',
-            body: 'This notification was scheduled 2 minutes ago!',
+            title: category,
+            body: message,
             android: {
                 channelId,
                 smallIcon: 'ic_launcher',
@@ -29,24 +47,45 @@ function schedule(channelId: string, trigger: TimestampTrigger): boolean {
         },
         trigger,
     );
+    return notificationId;
 }
 
-export function scheduleNotification(date: Date): boolean {
-    // Request permissions (required for iOS)
-    const permission = await notifee.requestPermission();
-    console.log('Permission status:', permission);
+export async function scheduleNotification(
+    date: Date,
+    category: string,
+    message: string
+): Promise<boolean> {
+    let notificationId: string;
 
-     // Create a channel (required for Android)
-     const channelId = await notifee.createChannel({
-        id: 'scheduled',
-        name: 'Scheduled Notifications',
-        description: 'Channel for scheduled notifications',
-        importance: 4, // High importance for better delivery
-        sound: 'default', // Default sound for notifications
-        vibration: true, // Enable vibration
-    });
-    // console.log('Channel created with ID:', channelId);
+    try {
+        // Request permissions
+        if (!hasNotificationPermission()) {
+            return false;
+        }
 
-    const trigger = dateToTrigger(date);
-    const notificationId = schedule(channelId, trigger);
+        // Create a channel
+        const channelId = await notifee.createChannel({
+            id: 'scheduled',
+            name: 'Scheduled Notifications',
+            description: 'Channel for scheduled notifications',
+            importance: 4, // High importance for better delivery
+            sound: 'default', // Default sound for notifications
+            vibration: true, // Enable vibration
+        });
+        // console.log('Channel created with ID:', channelId);
+
+        const trigger = dateToTrigger(date);
+        notificationId = await schedule(channelId, trigger, category, message);
+        // console.log('Notification scheduled with ID:', notificationId);
+    } catch (error) {
+        console.error('Error scheduling notification:', error);
+        return false;
+    }
+
+    const notificationYear = date.getFullYear();
+    const notificationMonth = date.getMonth() + 1;
+
+    await storeNotification(notificationYear, notificationMonth, category, notificationId);
+
+    return true;
 }
