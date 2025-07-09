@@ -59,7 +59,7 @@ export async function scheduleNotification(
 
     try {
         // Request permissions
-        if (!hasNotificationPermission()) {
+        if (!await hasNotificationPermission()) {
             return false;
         }
 

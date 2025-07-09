@@ -1,7 +1,9 @@
 import React from 'react';
-import { Text, TouchableOpacity } from 'react-native';
+import { Text, TouchableOpacity, View } from 'react-native';
 import { Agenda, AgendaEntry, AgendaSchedule, DateData } from 'react-native-calendars';
 import { MMKV, Mode } from 'react-native-mmkv'
+import Icon from '@react-native-vector-icons/lucide';
+import { homeScreenStyles } from '../utility/styles';
 
 const mockItems: AgendaSchedule = {
     '2025-07-03': [{ name: 'Cycling', height: 80, day: '2025-07-03' }, { name: 'Data presentation', height: 80, day: '2025-07-03' }],
@@ -27,6 +29,31 @@ function loadItemsForMonth(data: DateData): AgendaSchedule {
     return {};
 }
 
+function emptyDataView() {
+    return (
+        <View style={ homeScreenStyles.empty }>
+            <View style={ homeScreenStyles.empty__row }>
+                <Text>
+                    There are no events scheduled
+                </Text>
+                <Icon name={'frown'} size={20} />
+            </View>
+            <View style={ homeScreenStyles.empty__row }>
+            <Icon name={'calendar'} size={20} />
+                <Text>
+                    to add event types and dates
+                </Text>
+            </View>
+            <View style={homeScreenStyles.empty__row}>
+                <Icon name={'bell'} size={20} />
+                <Text>
+                    to set the time you want to be notified
+                </Text>
+            </View>
+        </View>
+    );
+}
+
 function HomeScreen() {
     const storage = new MMKV();
     const itemsFromStorage = storage.getString('agendaItems');
@@ -40,7 +67,7 @@ function HomeScreen() {
 
     const renderItem = React.useCallback((item: AgendaEntry) => {
         return (
-            <TouchableOpacity style={{ marginRight: 10, marginTop: 17 }}>
+            <TouchableOpacity style={ homeScreenStyles.test }>
                 <Text>{item.name}</Text>
             </TouchableOpacity>
         );
@@ -56,6 +83,7 @@ function HomeScreen() {
             items={items}
             loadItemsForMonth={(data: DateData) => loadItemsForMonth(data)}
             selected={formattedDate}
+            renderEmptyData={emptyDataView}
 
             renderItem={renderItem}
             renderEmptyDate={renderEmptyDate}

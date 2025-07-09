@@ -1,11 +1,11 @@
-import { MMKV, Mode } from "react-native-mmkv";
+import { MMKV } from "react-native-mmkv";
 
-export async function getKvStorage(readOnly: boolean, mode: Mode): Promise<MMKV> {
+export async function getKvStorage(): Promise<MMKV> {
     return new MMKV();
 }
 
 export async function storeNotification(year: number, month: number, category: string, notificationId: string): Promise<void> {
-    const storage = await getKvStorage(false, Mode.SINGLE_PROCESS);
+    const storage = await getKvStorage();
 
     const notificationsKey = `${year}-${month}-${category}`;
     const notificationsFromStorage = storage.getString(notificationsKey);
