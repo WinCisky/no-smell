@@ -35,11 +35,11 @@ export const calendarScreenStyles = StyleSheet.create({
         padding: 10,
         gap: 10,
     },
+    card__title: {
+        verticalAlign: 'middle',
+    },
     card__actions: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10,
-        paddingRight: 10
     },
     fab: {
         position: 'absolute',
