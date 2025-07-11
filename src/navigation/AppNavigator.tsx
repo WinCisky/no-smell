@@ -1,47 +1,35 @@
-import React from 'react';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import Icon from '@react-native-vector-icons/lucide';
+import * as React from 'react';
+import { Appbar, BottomNavigation } from 'react-native-paper';
 import HomeScreen from '../screens/HomeScreen';
 import NotificationsScreen from '../screens/NotificationsScreen';
 import CalendarScreen from '../screens/CalendarScreen';
 
-export type RootStackParamList = {
-  Home: undefined;
-  Notifications: undefined;
-  Calendar: undefined;
+const AppNavigator = () => {
+  const [index, setIndex] = React.useState(0);
+  const [routes] = React.useState([
+    { key: 'home', title: 'Home', focusedIcon: 'home', unfocusedIcon: 'home-outline'},
+    { key: 'calendar', title: 'Calendar', focusedIcon: 'calendar', unfocusedIcon: 'calendar-outline' },
+    { key: 'notifications', title: 'Notifications', focusedIcon: 'bell', unfocusedIcon: 'bell-outline' },
+  ]);
+
+  const renderScene = BottomNavigation.SceneMap({
+    home: HomeScreen,
+    calendar: CalendarScreen,
+    notifications: NotificationsScreen,
+  });
+
+  return (
+    <>
+      <Appbar.Header>
+        <Appbar.Content title={routes[index].title} />
+      </Appbar.Header>
+      <BottomNavigation
+        navigationState={{ index, routes }}
+        onIndexChange={setIndex}
+        renderScene={renderScene}
+      />
+    </>
+  );
 };
 
-const MyTabs = createBottomTabNavigator({
-  screens: {
-    Home: HomeScreen,
-    Notifications: NotificationsScreen,
-    Calendar: CalendarScreen,
-  },
-  screenOptions: ({ route }) => ({
-    headerShown: false,
-    tabBarIcon: ({ focused, color, size }) => {
-      let iconName: React.ComponentProps<typeof Icon>['name'];
-
-      switch (route.name) {
-        case 'Home':
-          iconName = 'house';
-          break;
-        case 'Calendar':
-          iconName = 'calendar';
-          break;
-        case 'Notifications':
-          iconName = 'bell';
-          break;
-        default:
-          iconName = 'triangle-alert';
-          break;
-      }
-
-      return <Icon name={iconName} size={size} color={color} />;
-    },
-    tabBarActiveTintColor: 'tomato',
-    tabBarInactiveTintColor: 'gray',
-  }),
-});
-
-export default MyTabs;
+export default AppNavigator;

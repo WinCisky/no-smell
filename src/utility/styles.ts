@@ -1,17 +1,6 @@
 import {
-    StyleSheet,
-    // Appearance
+    StyleSheet
 } from 'react-native';
-
-// const colorScheme = Appearance.getColorScheme();
-// const isDarkMode = colorScheme === 'dark';
-const colours = {
-    text: '#081209',
-    background: '#f5faf5',
-    primary: '#5baf5a',
-    secondary: '#a1bad3',
-    accent: '#7c83c0',
-};
 
 export const homeScreenStyles = StyleSheet.create({
     empty: {
@@ -40,68 +29,24 @@ export const homeScreenStyles = StyleSheet.create({
 export const calendarScreenStyles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: colours.background,
     },
     container__scroll: {
-        flex: 1
-    },
-    type: {
-        flexDirection: 'row',
-        justifyContent: 'flex-start',
-        alignItems: 'center',
-        borderRadius: 10,
-        paddingVertical: 10,
-        gap: 20,
-        marginBottom: 5,
-        marginTop: 10,
-        marginHorizontal: 10,
+        flex: 1,
         padding: 10,
-        backgroundColor: 'white',
-        boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)'
+        gap: 10,
     },
-    item__text: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        textTransform: 'uppercase',
-        color: colours.text,
-    },
-    type__row: {
-        flex: 1,
-        flexDirection: 'row',
-        display: 'flex',
-        justifyContent: 'space-between',
-        gap: 10
-    },
-    type__color: {
-        width: 20,
-        height: 20,
-        borderRadius: 20,
-        position: 'relative'
-    },
-    type_actions: {
-        display: 'flex',
+    card__actions: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 10
+        gap: 10,
+        paddingRight: 10
     },
-    type__button: {
-        paddingHorizontal: 8,
-        paddingVertical: 12,
-        borderRadius: 10,
-    },
-    button__add: {
+    fab: {
         position: 'absolute',
-        bottom: 20,
-        right: 20,
-        backgroundColor: colours.primary,
+        margin: 16,
+        right: 0,
+        bottom: 0,
     },
-    item__container: {
-        flex: 1,
-        display: 'flex',
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 10
-    }
 });
 
 export const notificationScreenStyles = StyleSheet.create({

@@ -6,13 +6,13 @@
  */
 
 import * as React from 'react';
-import {
-  createStaticNavigation,
-} from '@react-navigation/native';
-import MyTabs from './src/navigation/AppNavigator';
-
-const Navigation = createStaticNavigation(MyTabs);
+import { PaperProvider } from 'react-native-paper';
+import AppNavigator from './src/navigation/AppNavigator';
 
 export default function App() {
-  return <Navigation />;
+  return (
+    <PaperProvider>
+      <AppNavigator />
+    </PaperProvider>
+  );
 }
