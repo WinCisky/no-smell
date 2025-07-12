@@ -4,20 +4,29 @@ import {
   ScrollView
 } from 'react-native';
 import { calendarScreenStyles } from '../utility/styles';
-import { 
-  Icon, 
-  Card, 
-  IconButton, 
-  FAB, 
-  Modal, 
-  Text, 
-  TextInput, 
-  RadioButton, 
+import {
+  Icon,
+  Card,
+  IconButton,
+  FAB,
+  Modal,
+  Text,
+  TextInput,
+  RadioButton,
   Button,
   Dialog,
   Portal
 } from 'react-native-paper';
 import { getKvStorage } from '../utility/storage';
+import { useNavigation } from '@react-navigation/native';
+import { StackNavigationProp } from '@react-navigation/stack';
+
+type RootStackParamList = {
+  CalendarTabs: undefined;
+  TypeEvents: { typeName: string; typeColor: string };
+};
+
+type NavigationProp = StackNavigationProp<RootStackParamList, 'CalendarTabs'>;
 
 async function loadTypes(setTypes: React.Dispatch<React.SetStateAction<Map<string, string>>>) {
   const storage = await getKvStorage();
@@ -28,36 +37,36 @@ async function loadTypes(setTypes: React.Dispatch<React.SetStateAction<Map<strin
 }
 
 async function saveNewType(
-  name: string, 
-  color: string, 
-  types: Map<string, string>, 
+  name: string,
+  color: string,
+  types: Map<string, string>,
   setTypes: React.Dispatch<React.SetStateAction<Map<string, string>>>,
   originalName?: string // For editing existing types
 ) {
   if (!name.trim()) {
     return false; // Don't save if name is empty
   }
-  
+
   const storage = await getKvStorage();
   const newTypes = new Map(types);
-  
+
   // Find the hex color for the selected color name
   const selectedColor = colors.find(c => c.name === color);
   const hexColor = selectedColor ? selectedColor.hex : '#000000';
-  
+
   // If we're editing an existing type, remove the old entry first
   if (originalName && originalName !== name.trim()) {
     newTypes.delete(originalName);
   }
-  
+
   newTypes.set(name.trim(), hexColor);
-  
+
   // Save to storage
   storage.set('eventTypes', JSON.stringify(Array.from(newTypes.entries())));
-  
+
   // Update state
   setTypes(newTypes);
-  
+
   return true;
 }
 
@@ -68,29 +77,31 @@ async function deleteType(
 ) {
   const storage = await getKvStorage();
   const newTypes = new Map(types);
-  
+
   // Remove the type
   newTypes.delete(typeName);
-  
+
   // Save to storage
   storage.set('eventTypes', JSON.stringify(Array.from(newTypes.entries())));
-  
+
   // Update state
   setTypes(newTypes);
 }
 
 const colors = [
-  { name: 'red', hex: '#F44336'},
-  { name: 'pink', hex: '#E91E63'},
-  { name: 'purple', hex: '#9C27B0'},
-  { name: 'blue', hex: '#2196F3'},
-  { name: 'green', hex: '#4CAF50'},
-  { name: 'yellow', hex: '#FFEB3B'},
-  { name: 'orange', hex: '#FF9800'},
-  { name: 'brown', hex: '#795548'},
+  { name: 'red', hex: '#F44336' },
+  { name: 'pink', hex: '#E91E63' },
+  { name: 'purple', hex: '#9C27B0' },
+  { name: 'blue', hex: '#2196F3' },
+  { name: 'green', hex: '#4CAF50' },
+  { name: 'yellow', hex: '#FFEB3B' },
+  { name: 'orange', hex: '#FF9800' },
+  { name: 'brown', hex: '#795548' },
 ]
 
 function CalendarScreen() {
+  const navigation = useNavigation<NavigationProp>();
+
   // import from mmkv the available types
   const [types, setTypes] = React.useState(new Map());
   const [visible, setVisible] = React.useState(false);
@@ -119,7 +130,7 @@ function CalendarScreen() {
     if (typeColor) {
       // Find the color name from the hex value
       const colorName = colors.find(c => c.hex === typeColor)?.name || 'red';
-      
+
       // Pre-populate the form with existing values
       setText(typeName);
       setValue(colorName);
@@ -131,6 +142,16 @@ function CalendarScreen() {
   const handleDelete = (typeName: string) => {
     setDeletingType(typeName);
     setDialogVisible(true);
+  };
+
+  const handleNavigateToTypeEvents = (typeName: string) => {
+    const typeColor = types.get(typeName);
+    if (typeColor) {
+      navigation.navigate('TypeEvents', {
+        typeName,
+        typeColor
+      });
+    }
   };
 
   const confirmDelete = async () => {
@@ -165,14 +186,14 @@ function CalendarScreen() {
               titleStyle={calendarScreenStyles.card__title}
               left={(props) => <Icon {...props} source="circle" color={color} />}
               right={(props) => <View style={calendarScreenStyles.card__actions}>
+                <IconButton {...props} icon="calendar" onPress={() => handleNavigateToTypeEvents(name)} />
                 <IconButton {...props} icon="pencil" onPress={() => handleEdit(name)} />
-                <IconButton {...props} icon="calendar" onPress={() => { }} />
                 <IconButton {...props} icon="delete" onPress={() => handleDelete(name)} />
               </View>}
             />
           </Card>
         ))}
-        
+
         {types.size === 0 && (
           <Card>
             <Card.Title
@@ -191,46 +212,55 @@ function CalendarScreen() {
       />
 
       <Modal visible={visible} onDismiss={hideModal} contentContainerStyle={containerStyle}>
-        <Text style={{ fontSize: 18, fontWeight: 'bold', marginBottom: 10 }}>
-          {editingType ? 'Edit Type' : 'Create New Type'}
+        <Text variant="titleLarge" style={{ marginBottom: 10 }}>
+          {editingType ? 'Edit type' : 'Create New Type'}
         </Text>
-        <Text>Pick the name of the type</Text>
+        <Text style={{ marginBottom: 10 }}>
+          Pick the name of the type
+        </Text>
         <TextInput
           label="Name"
           value={text}
           onChangeText={text => setText(text)}
+          style={{ marginBottom: 20 }}
         />
-        <Text>Select the color of the type</Text>
+        <Text style={{ marginBottom: 10 }}>
+          Select the color of the type
+        </Text>
         <RadioButton.Group onValueChange={newValue => setValue(newValue)} value={value}>
           <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
-          {Array.from(colors).map((color) => (
-            <View key={color.name} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: `${color.hex}22`, paddingRight: 10, borderRadius: 5 }}>
-              <RadioButton value={color.name} color={color.hex} />
-              <Text>{color.name}</Text>
-            </View>
-          ))}
+            {Array.from(colors).map((color) => (
+              <View key={color.name} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: `${color.hex}22`, paddingRight: 10, borderRadius: 5 }}>
+                <RadioButton value={color.name} color={color.hex} />
+                <Text>{color.name}</Text>
+              </View>
+            ))}
           </View>
         </RadioButton.Group>
-        <Button icon="content-save" mode="contained" onPress={handleSave}>
-          Save
-        </Button>
-        <Button icon="close" mode="contained-tonal" onPress={hideModal}>Cancel</Button>
+        <View style={{ flexDirection: 'row-reverse', justifyContent: 'space-between', marginTop: 20 }}>
+          <Button icon="content-save" mode="contained" onPress={handleSave}>
+            Save
+          </Button>
+          <Button icon="close" mode="contained-tonal" onPress={hideModal}>
+            Cancel
+          </Button>
+        </View>
       </Modal>
 
       <Portal>
-          <Dialog visible={dialogVisible} onDismiss={hideDialog}>
-            <Dialog.Title>Delete Type</Dialog.Title>
-            <Dialog.Content>
-              <Text variant="bodyMedium">
-                Are you sure you want to delete "{deletingType}"? This action cannot be undone.
-              </Text>
-            </Dialog.Content>
-            <Dialog.Actions>
-              <Button onPress={hideDialog}>Cancel</Button>
-              <Button onPress={confirmDelete} textColor="red">Delete</Button>
-            </Dialog.Actions>
-          </Dialog>
-        </Portal>
+        <Dialog visible={dialogVisible} onDismiss={hideDialog}>
+          <Dialog.Title>Delete Type</Dialog.Title>
+          <Dialog.Content>
+            <Text variant="bodyMedium">
+              Are you sure you want to delete "{deletingType}"? This action cannot be undone.
+            </Text>
+          </Dialog.Content>
+          <Dialog.Actions>
+            <Button onPress={hideDialog}>Cancel</Button>
+            <Button onPress={confirmDelete} textColor="red">Delete</Button>
+          </Dialog.Actions>
+        </Dialog>
+      </Portal>
     </View>
   );
 }

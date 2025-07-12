@@ -1,15 +1,21 @@
-import React from 'react';
-import { Text, TouchableOpacity, View } from 'react-native';
-import { Agenda, AgendaEntry, AgendaSchedule, DateData } from 'react-native-calendars';
+import React, { useState, useMemo, useCallback, useRef } from 'react';
+import { TouchableOpacity, View, TextStyle, StyleSheet } from 'react-native';
+import { CalendarList, AgendaEntry, AgendaSchedule, DateData } from 'react-native-calendars';
 import { MMKV, Mode } from 'react-native-mmkv'
 import Icon from '@react-native-vector-icons/lucide';
 import { homeScreenStyles } from '../utility/styles';
+import { Card, Text, Button } from 'react-native-paper';
 
 const mockItems: AgendaSchedule = {
     '2025-07-03': [{ name: 'Cycling', height: 80, day: '2025-07-03' }, { name: 'Data presentation', height: 80, day: '2025-07-03' }],
     '2025-07-04': [{ name: 'Go to the gym', height: 80, day: '2025-07-04' }],
     '2025-07-05': [{ name: 'Do the groceries', height: 80, day: '2025-07-05' }, { name: 'Go to the beach', height: 80, day: '2025-07-05' }],
 };
+
+const RANGE = 24;
+const initialDate = '2025-07-05';
+const nextWeekDate = '2025-07-14';
+const nextMonthDate = '2025-08-05';
 
 function loadItemsForMonth(data: DateData): AgendaSchedule {
     const month = data.month;
@@ -29,31 +35,6 @@ function loadItemsForMonth(data: DateData): AgendaSchedule {
     return {};
 }
 
-function emptyDataView() {
-    return (
-        <View style={ homeScreenStyles.empty }>
-            <View style={ homeScreenStyles.empty__row }>
-                <Text>
-                    There are no events scheduled
-                </Text>
-                <Icon name={'frown'} size={20} />
-            </View>
-            <View style={ homeScreenStyles.empty__row }>
-            <Icon name={'calendar'} size={20} />
-                <Text>
-                    to add event types and dates
-                </Text>
-            </View>
-            <View style={homeScreenStyles.empty__row}>
-                <Icon name={'bell'} size={20} />
-                <Text>
-                    to set the time you want to be notified
-                </Text>
-            </View>
-        </View>
-    );
-}
-
 function HomeScreen() {
     const storage = new MMKV();
     const itemsFromStorage = storage.getString('agendaItems');
@@ -65,48 +46,89 @@ function HomeScreen() {
     const today = new Date();
     const formattedDate = today.toISOString().split('T')[0];
 
-    const renderItem = React.useCallback((item: AgendaEntry) => {
-        return (
-            <TouchableOpacity style={ homeScreenStyles.test }>
-                <Text>{item.name}</Text>
-            </TouchableOpacity>
-        );
+    const [selected, setSelected] = useState(initialDate);
+    const [currentMonth, setCurrentMonth] = useState(formattedDate);
+    const calendarRef = useRef<any>(null);
+
+    const marked = useMemo(() => {
+        return {
+            [nextWeekDate]: {
+                selected: selected === nextWeekDate,
+                selectedTextColor: '#5E60CE',
+                marked: true
+            },
+            [nextMonthDate]: {
+                selected: selected === nextMonthDate,
+                selectedTextColor: '#5E60CE',
+                marked: true
+            },
+            [selected]: {
+                selected: true,
+                disableTouchEvent: true,
+                selectedColor: '#5E60CE',
+                selectedTextColor: 'white'
+            }
+        };
+    }, [selected]);
+
+    const onDayPress = useCallback((day: DateData) => {
+        setSelected(day.dateString);
     }, []);
 
-    const renderEmptyDate = React.useCallback(() => {
-        return <Text>Empty date</Text>;
+    const onVisibleMonthsChange = useCallback((months: any[]) => {
+        console.log('now these months are visible', months);
+        if (months && months.length > 0) {
+            setCurrentMonth(months[0].dateString);
+        }
     }, []);
+
+    // Check if today's date is in the currently visible month
+    const isTodayInCurrentMonth = useMemo(() => {
+        const todayDate = new Date(formattedDate);
+        const currentDate = new Date(currentMonth);
+        return todayDate.getMonth() === currentDate.getMonth() && 
+               todayDate.getFullYear() === currentDate.getFullYear();
+    }, [formattedDate, currentMonth]);
+    
+    function scrollToToday() {
+        // Scroll to today's date in the calendar
+        const today = new Date();
+        const formattedToday = today.toISOString().split('T')[0];
+        
+        if (calendarRef.current) {
+            calendarRef.current.scrollToDay(formattedToday, 0, true);
+            setSelected(formattedToday);
+        }
+    }
+
 
     return (
-        <Agenda
-            testID={'agenda'}
-            items={items}
-            loadItemsForMonth={(data: DateData) => loadItemsForMonth(data)}
-            selected={formattedDate}
-            renderEmptyData={emptyDataView}
-
-            renderItem={renderItem}
-            renderEmptyDate={renderEmptyDate}
-            // renderItem={this.renderItem}
-            // rowHasChanged={this.rowHasChanged}
-            showClosingKnob={true}
-            // markingType={'period'}
-            // markedDates={{
-            //    '2017-05-08': {textColor: '#43515c'},
-            //    '2017-05-09': {textColor: '#43515c'},
-            //    '2017-05-14': {startingDay: true, endingDay: true, color: 'blue'},
-            //    '2017-05-21': {startingDay: true, color: 'blue'},
-            //    '2017-05-22': {endingDay: true, color: 'gray'},
-            //    '2017-05-24': {startingDay: true, color: 'gray'},
-            //    '2017-05-25': {color: 'gray'},
-            //    '2017-05-26': {endingDay: true, color: 'gray'}}}
-            // monthFormat={'yyyy'}
-            // theme={{calendarBackground: 'red', agendaKnobColor: 'green'}}
-            // renderDay={this.renderDay}
-            // hideExtraDays={false}
-            // showOnlySelectedDayItems
-            // reservationsKeyExtractor={this.reservationsKeyExtractor}
-        />
+        <View style={{ flex: 1 }}>
+            <CalendarList
+                ref={calendarRef}
+                testID={'calendarList'}
+                current={formattedDate}
+                onVisibleMonthsChange={onVisibleMonthsChange}
+                pastScrollRange={RANGE}
+                futureScrollRange={RANGE}
+                onDayPress={onDayPress}
+                markedDates={marked}
+                renderHeader={undefined}
+                calendarHeight={undefined}
+                theme={undefined}
+                horizontal={true}
+                pagingEnabled={true}
+                staticHeader={true}
+            />
+            <Button 
+                icon="calendar-today" 
+                mode="contained" 
+                onPress={() => scrollToToday()}
+                disabled={isTodayInCurrentMonth}
+            >
+                Scroll to Today
+            </Button>
+        </View>
     );
 }
 
