@@ -179,7 +179,7 @@ function CalendarScreen() {
     <View style={calendarScreenStyles.container}>
       <ScrollView style={calendarScreenStyles.container__scroll}>
         {Array.from(types).map(([name, color]) => (
-          <Card key={name} style={{ marginBottom: 10 }}>
+          <Card key={name} style={{ marginBottom: 16 }}>
             <Card.Title
               title={name}
               titleVariant='titleMedium'

@@ -1,9 +1,10 @@
-import React, { useState, useMemo, useCallback, useRef } from 'react';
+import React, { useState, useMemo, useCallback, useRef, useEffect } from 'react';
 import { View, ScrollView } from 'react-native';
 import { Card, Text, Icon, FAB, Button } from 'react-native-paper';
 import { calendarScreenStyles } from '../utility/styles';
 import { StackScreenProps } from '@react-navigation/stack';
 import { CalendarList, AgendaEntry, AgendaSchedule, DateData } from 'react-native-calendars';
+import { getKvStorage } from '../utility/storage';
 
 const RANGE = 24;
 
@@ -14,7 +15,7 @@ type RootStackParamList = {
 
 type Props = StackScreenProps<RootStackParamList, 'TypeEvents'>;
 
-function TypeEventsScreen({ route }: Props) {
+function TypeEventsScreen({ route, navigation }: Props) {
     const { typeName, typeColor } = route.params;
 
     const today = new Date();
@@ -23,6 +24,45 @@ function TypeEventsScreen({ route }: Props) {
     const calendarRef = useRef<any>(null);
     const [marked, setMarked] = useState<{ [key: string]: any }>();
     const [currentMonth, setCurrentMonth] = useState(formattedDate);
+
+    // Load saved events when component mounts
+    useEffect(() => {
+        const loadSavedEvents = async () => {
+            try {
+                const storage = await getKvStorage();
+                const currentYear = new Date().getFullYear();
+                const loadedMarked: { [key: string]: any } = {};
+
+                // Load events for the current year and surrounding years
+                for (let year = currentYear - 1; year <= currentYear + 2; year++) {
+                    for (let month = 1; month <= 12; month++) {
+                        const key = `${year}-${month}-${typeName}`;
+                        const savedDates = storage.getString(key);
+                        
+                        if (savedDates) {
+                            const dates = JSON.parse(savedDates) as string[];
+                            dates.forEach(date => {
+                                loadedMarked[date] = {
+                                    selected: true,
+                                    disableTouchEvent: false,
+                                    selectedColor: typeColor,
+                                    selectedTextColor: 'white'
+                                };
+                            });
+                        }
+                    }
+                }
+
+                if (Object.keys(loadedMarked).length > 0) {
+                    setMarked(loadedMarked);
+                }
+            } catch (error) {
+                console.error('Error loading saved events:', error);
+            }
+        };
+
+        loadSavedEvents();
+    }, [typeName, typeColor]);
 
     const onDayPress = useCallback((day: DateData) => {
 
@@ -75,9 +115,42 @@ function TypeEventsScreen({ route }: Props) {
         }
     }
 
-    function saveMarkedDates() {
-        // Here you would typically save the marked dates to your storage or state management solution
-        console.log('Marked dates saved:', marked);
+    async function saveMarkedDates() {
+        // save the marked dates to mmkv grouped by type year and month
+        const storage = await getKvStorage();
+        const newMarked = { ...marked };
+
+        if (Object.keys(newMarked).length === 0) {
+            console.warn('No dates marked to save');
+            return;
+        }
+
+        // Group by year and month
+        const grouped: { [key: string]: { [key: string]: string[] } } = {};
+        Object.keys(newMarked).forEach(date => {
+            const dateObj = new Date(date);
+            const year = dateObj.getFullYear();
+            const month = dateObj.getMonth() + 1; // Months are 0-indexed
+
+            if (!grouped[year]) {
+                grouped[year] = {};
+            }
+            if (!grouped[year][month]) {
+                grouped[year][month] = [];
+            }
+            grouped[year][month].push(date);
+        });
+
+        // Save to storage
+        for (const year in grouped) {
+            for (const month in grouped[year]) {
+                const key = `${year}-${month}-${typeName}`;
+                storage.set(key, JSON.stringify(grouped[year][month]));
+            }
+        }
+
+        // Go back to the calendar screen
+        navigation.goBack();
     }
 
     return (
@@ -88,10 +161,10 @@ function TypeEventsScreen({ route }: Props) {
                 </Text>
                 <Button 
                     mode="contained" 
-                    icon="thumb-up"
+                    icon="content-save"
                     onPress={saveMarkedDates}
                 >
-                    Done
+                    Save
                 </Button>
             </View>
             <Text variant="labelLarge" style={{ margin: 10 }}>

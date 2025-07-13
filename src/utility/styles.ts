@@ -29,11 +29,13 @@ export const homeScreenStyles = StyleSheet.create({
 export const calendarScreenStyles = StyleSheet.create({
     container: {
         flex: 1,
+        backgroundColor: '#f5f5f5',
+        padding: 8
     },
     container__scroll: {
+        display: 'flex',
         flex: 1,
-        padding: 10,
-        gap: 10,
+        padding: 8,
     },
     card__title: {
         verticalAlign: 'middle',
@@ -52,9 +54,8 @@ export const calendarScreenStyles = StyleSheet.create({
 export const notificationScreenStyles = StyleSheet.create({
     container: {
         flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        padding: 20
+        backgroundColor: '#f5f5f5',
+        padding: 8
     },
     container__text: {
         fontSize: 24,
