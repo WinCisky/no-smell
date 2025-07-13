@@ -40,8 +40,7 @@ async function saveNewType(
   name: string,
   color: string,
   types: Map<string, string>,
-  setTypes: React.Dispatch<React.SetStateAction<Map<string, string>>>,
-  originalName?: string // For editing existing types
+  setTypes: React.Dispatch<React.SetStateAction<Map<string, string>>>
 ) {
   if (!name.trim()) {
     return false; // Don't save if name is empty
@@ -53,11 +52,6 @@ async function saveNewType(
   // Find the hex color for the selected color name
   const selectedColor = colors.find(c => c.name === color);
   const hexColor = selectedColor ? selectedColor.hex : '#000000';
-
-  // If we're editing an existing type, remove the old entry first
-  if (originalName && originalName !== name.trim()) {
-    newTypes.delete(originalName);
-  }
 
   newTypes.set(name.trim(), hexColor);
 
@@ -108,7 +102,6 @@ function CalendarScreen() {
   const [dialogVisible, setDialogVisible] = React.useState(false);
   const [text, setText] = React.useState('');
   const [value, setValue] = React.useState('red');
-  const [editingType, setEditingType] = React.useState<string | null>(null); // Track which type we're editing
   const [deletingType, setDeletingType] = React.useState<string | null>(null); // Track which type we're deleting
 
   const showModal = () => setVisible(true);
@@ -117,26 +110,11 @@ function CalendarScreen() {
     // Reset form when closing modal
     setText('');
     setValue('red'); // Reset to default color
-    setEditingType(null); // Clear editing state
   };
   const showDialog = () => setDialogVisible(true);
   const hideDialog = () => {
     setDialogVisible(false);
     setDeletingType(null); // Clear the deleting type when dialog closes
-  };
-
-  const handleEdit = (typeName: string) => {
-    const typeColor = types.get(typeName);
-    if (typeColor) {
-      // Find the color name from the hex value
-      const colorName = colors.find(c => c.hex === typeColor)?.name || 'red';
-
-      // Pre-populate the form with existing values
-      setText(typeName);
-      setValue(colorName);
-      setEditingType(typeName);
-      setVisible(true);
-    }
   };
 
   const handleDelete = (typeName: string) => {
@@ -162,7 +140,7 @@ function CalendarScreen() {
   };
 
   const handleSave = async () => {
-    const success = await saveNewType(text, value, types, setTypes, editingType || undefined);
+    const success = await saveNewType(text, value, types, setTypes);
     if (success) {
       hideModal();
     }
@@ -187,7 +165,6 @@ function CalendarScreen() {
               left={(props) => <Icon {...props} source="circle" color={color} />}
               right={(props) => <View style={calendarScreenStyles.card__actions}>
                 <IconButton {...props} icon="calendar" onPress={() => handleNavigateToTypeEvents(name)} />
-                <IconButton {...props} icon="pencil" onPress={() => handleEdit(name)} />
                 <IconButton {...props} icon="delete" onPress={() => handleDelete(name)} />
               </View>}
             />
@@ -213,7 +190,7 @@ function CalendarScreen() {
 
       <Modal visible={visible} onDismiss={hideModal} contentContainerStyle={containerStyle}>
         <Text variant="titleLarge" style={{ marginBottom: 10 }}>
-          {editingType ? 'Edit type' : 'Create New Type'}
+          Create New Type
         </Text>
         <Text style={{ marginBottom: 10 }}>
           Pick the name of the type

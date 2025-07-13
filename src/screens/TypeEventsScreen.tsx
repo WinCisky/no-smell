@@ -5,6 +5,7 @@ import { calendarScreenStyles } from '../utility/styles';
 import { StackScreenProps } from '@react-navigation/stack';
 import { CalendarList, AgendaEntry, AgendaSchedule, DateData } from 'react-native-calendars';
 import { getKvStorage } from '../utility/storage';
+import { updateTypeNotifications } from '../utility/notifications';
 
 const RANGE = 24;
 
@@ -35,21 +36,19 @@ function TypeEventsScreen({ route, navigation }: Props) {
 
                 // Load events for the current year and surrounding years
                 for (let year = currentYear - 1; year <= currentYear + 2; year++) {
-                    for (let month = 1; month <= 12; month++) {
-                        const key = `${year}-${month}-${typeName}`;
-                        const savedDates = storage.getString(key);
-                        
-                        if (savedDates) {
-                            const dates = JSON.parse(savedDates) as string[];
-                            dates.forEach(date => {
-                                loadedMarked[date] = {
-                                    selected: true,
-                                    disableTouchEvent: false,
-                                    selectedColor: typeColor,
-                                    selectedTextColor: 'white'
-                                };
-                            });
-                        }
+                    const key = `${year}-${typeName}`;
+                    const savedDates = storage.getString(key);
+                    
+                    if (savedDates) {
+                        const dates = JSON.parse(savedDates) as string[];
+                        dates.forEach(date => {
+                            loadedMarked[date] = {
+                                selected: true,
+                                disableTouchEvent: false,
+                                selectedColor: typeColor,
+                                selectedTextColor: 'white'
+                            };
+                        });
                     }
                 }
 
@@ -116,7 +115,7 @@ function TypeEventsScreen({ route, navigation }: Props) {
     }
 
     async function saveMarkedDates() {
-        // save the marked dates to mmkv grouped by type year and month
+        // save the marked dates to mmkv grouped by type and year
         const storage = await getKvStorage();
         const newMarked = { ...marked };
 
@@ -125,29 +124,26 @@ function TypeEventsScreen({ route, navigation }: Props) {
             return;
         }
 
-        // Group by year and month
-        const grouped: { [key: string]: { [key: string]: string[] } } = {};
+        // Group by year
+        const grouped: { [key: string]: string[] } = {};
         Object.keys(newMarked).forEach(date => {
             const dateObj = new Date(date);
             const year = dateObj.getFullYear();
-            const month = dateObj.getMonth() + 1; // Months are 0-indexed
 
             if (!grouped[year]) {
-                grouped[year] = {};
+                grouped[year] = [];
             }
-            if (!grouped[year][month]) {
-                grouped[year][month] = [];
-            }
-            grouped[year][month].push(date);
+            grouped[year].push(date);
         });
 
         // Save to storage
         for (const year in grouped) {
-            for (const month in grouped[year]) {
-                const key = `${year}-${month}-${typeName}`;
-                storage.set(key, JSON.stringify(grouped[year][month]));
-            }
+            const key = `${year}-${typeName}`;
+            storage.set(key, JSON.stringify(grouped[year]));
         }
+
+        // Update notifications for the type
+        await updateTypeNotifications(typeName);
 
         // Go back to the calendar screen
         navigation.goBack();
