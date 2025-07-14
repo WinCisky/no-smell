@@ -251,7 +251,7 @@ function HomeScreen() {
         <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', margin: 20 }}>
                 <Text variant="titleMedium" style={{ textAlign: 'center' }}>
-                    Today is {today.toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })}
+                    {today.toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })}
                 </Text>
                 <Button
                     icon="calendar-today"
@@ -282,12 +282,13 @@ function HomeScreen() {
 
             {/* Show selected date events */}
             <View style={{ margin: 20 }}>
-                <Text variant="titleMedium" style={{ marginBottom: 20 }}>
-                    Events for {selected === formattedDate ? 'today' : selected}
-                </Text>
-                <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
-                    {events[selected] ? (
-                        events[selected].map((item: AgendaEntry, index: number) => (
+                {!events[selected] ? (
+                    <Text style={{ color: '#888', textAlign: 'center' }}>
+                        No events for {selected === formattedDate ? 'today' : 'this date'}
+                    </Text>
+                ) : (
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
+                        {events[selected].map((item: AgendaEntry, index: number) => (
                             <Chip
                                 icon={(props) => <Icon {...props} source="circle" color={eventTypes.get(item.name)} />}
                                 onPress={() => console.log('Pressed')}
@@ -297,13 +298,9 @@ function HomeScreen() {
                             >
                                 {item.name} 12:00 PM
                             </Chip>
-                        ))
-                    ) : (
-                        <Text style={{ color: '#888' }}>
-                            No events for {selected === formattedDate ? 'today' : 'this date'}
-                        </Text>
-                    )}
-                </View>
+                        ))}
+                    </View>
+                )}
             </View>
         </ScrollView>
     );

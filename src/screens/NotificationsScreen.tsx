@@ -1,16 +1,15 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { View, ScrollView } from 'react-native';
-import { Card, Text, IconButton, HelperText, Button, Icon, Portal, Modal, TextInput } from 'react-native-paper';
+import { Card, Text, IconButton, Chip, Icon, Portal } from 'react-native-paper';
 import { notificationScreenStyles } from '../utility/styles';
 import { getKvStorage } from '../utility/storage';
-import { scheduleNotification } from '../utility/notifications';
 import { useFocusEffect } from '@react-navigation/native';
+import { TimePickerModal } from 'react-native-paper-dates';
 
 interface NotificationItem {
     id: string;
     type: string;
     time: string;
-    message: string;
 }
 
 function NotificationsScreen() {
@@ -65,45 +64,36 @@ function NotificationsScreen() {
     const handleAddNotification = (typeName: string, typeColor: string) => {
         setSelectedType({ name: typeName, color: typeColor });
         setModalVisible(true);
-        
-        // Set default values
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        setNotificationTime('09:00');
-        setNotificationMessage(`Don't forget about ${typeName}!`);
     };
 
-    const handleSaveNotification = async () => {
-        if (!selectedType || !notificationTime || !notificationMessage || timeHasErrors()) {
-            return;
-        }
+    const onConfirm = React.useCallback(
+        async ({ hours, minutes }: { hours: number; minutes: number }) => {
+            
+            if (!selectedType) {
+                return;
+            }
+            const newNotification: NotificationItem = {
+                id: `${selectedType?.name}-${hours}:${minutes}`,
+                type: selectedType.name,
+                time: `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`,
+            };
 
-        // add to notifications
-        const newNotification: NotificationItem = {
-            id: `${selectedType.name}-${notificationTime}`,
-            type: selectedType.name,
-            time: notificationTime,
-            message: notificationMessage,
-        }
+            setNotifications(prev => ({
+                ...prev,
+                [selectedType.name]: [...(prev[selectedType.name] || []), newNotification]
+            }));
 
-        setNotifications(prev => ({
-            ...prev,
-            [selectedType.name]: [...(prev[selectedType.name] || []), newNotification]
-        }));
-
-        // save to mmkv
-        const storage = await getKvStorage();
-        const existingNotifications = storage.getString(`notifications-${selectedType.name}`) || "[]";
-        const notificationsForType = JSON.parse(existingNotifications) ?? [];
-        notificationsForType.push(newNotification);
-        storage.set(`notifications-${selectedType.name}`, JSON.stringify(notificationsForType));
-
-        setModalVisible(false);
-        // Reset form
-        setSelectedType(null);
-        setNotificationTime('');
-        setNotificationMessage('');
-    };
+            const storage = await getKvStorage();
+            const existingNotifications = storage.getString(`notifications-${selectedType.name}`) || "[]";
+            const notificationsForType = JSON.parse(existingNotifications) ?? [];
+            notificationsForType.push(newNotification);
+            storage.set(`notifications-${selectedType.name}`, JSON.stringify(notificationsForType));
+            
+            setSelectedType(null);
+            setModalVisible(false);
+        },
+        [setModalVisible]
+    );
 
     const handleDeleteNotification = async (typeName: string, notificationId: string) => {
         // TODO: Implement notification deletion logic
@@ -140,30 +130,17 @@ function NotificationsScreen() {
                         />
                         
                         {notifications[typeName] && notifications[typeName].length > 0 ? (
-                            <Card.Content>
+                            <Card.Content style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                                 {notifications[typeName].map((notification) => (
-                                    <View key={notification.id} style={{ 
-                                        flexDirection: 'row', 
-                                        justifyContent: 'space-between', 
-                                        alignItems: 'center',
-                                        paddingVertical: 8,
-                                        borderBottomWidth: 1,
-                                        borderBottomColor: '#f0f0f0'
-                                    }}>
-                                        <View style={{ flex: 1 }}>
-                                            <Text variant="bodyMedium">
-                                                {notification.time}
-                                            </Text>
-                                            <Text variant="bodySmall" style={{ color: '#666' }}>
-                                                {notification.message}
-                                            </Text>
-                                        </View>
-                                        <IconButton
-                                            icon="delete"
-                                            size={16}
-                                            onPress={() => handleDeleteNotification(typeName, notification.id)}
-                                        />
-                                    </View>
+                                    <Chip
+                                        icon={(props) => <Icon {...props} source="circle" color={typeColor} />}
+                                        onPress={() => console.log('Pressed')}
+                                        onClose={() => console.log('Closed')}
+                                        closeIcon={(props) => <Icon {...props} source="close" />}
+                                        key={notification.id}
+                                    >
+                                        {notification.time}
+                                    </Chip>
                                 ))}
                             </Card.Content>
                         ) : (
@@ -177,65 +154,21 @@ function NotificationsScreen() {
                 ))}
 
                 {eventTypes.size === 0 && (
-                    <Card style={{ margin: 16 }}>
-                        <Card.Content>
-                            <Text variant="titleMedium" style={{ textAlign: 'center' }}>
-                                No event types found
-                            </Text>
-                            <Text variant="bodyMedium" style={{ textAlign: 'center', marginTop: 8 }}>
-                                Create some event types in the Calendar tab first
-                            </Text>
-                        </Card.Content>
-                    </Card>
+                    <Text variant="titleMedium" style={{ textAlign: 'center', marginTop: 28, color: '#888' }}>
+                        No event types found
+                    </Text>
                 )}
             </ScrollView>
 
             {/* Add Notification Modal */}
             <Portal>
-                <Modal
+                <TimePickerModal
                     visible={modalVisible}
                     onDismiss={() => setModalVisible(false)}
-                    contentContainerStyle={{
-                        backgroundColor: 'white',
-                        padding: 20,
-                        margin: 20,
-                        borderRadius: 8
-                    }}
-                >
-                    <Text variant="headlineSmall" style={{ marginBottom: 16, textAlign: 'center' }}>
-                        Add notification for {selectedType?.name}
-                    </Text>
-                    
-                    <TextInput
-                        label="Time (HH:MM)"
-                        value={notificationTime}
-                        onChangeText={setNotificationTime}
-                        placeholder="09:00"
+                    onConfirm={onConfirm}
+                    hours={12}
+                    minutes={14}
                     />
-                    <HelperText 
-                        type="error" visible={timeHasErrors()}
-                        style={{ marginBottom: 16 }}
-                    >
-                        Time is invalid!
-                    </HelperText>
-                    
-                    <TextInput
-                        label="Message"
-                        value={notificationMessage}
-                        onChangeText={setNotificationMessage}
-                        style={{ marginBottom: 16 }}
-                        multiline
-                    />
-                    
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-                        <Button mode="outlined" onPress={() => setModalVisible(false)}>
-                            Cancel
-                        </Button>
-                        <Button mode="contained" onPress={handleSaveNotification}>
-                            Save
-                        </Button>
-                    </View>
-                </Modal>
             </Portal>
         </View>
     );

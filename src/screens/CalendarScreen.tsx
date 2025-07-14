@@ -172,14 +172,9 @@ function CalendarScreen() {
         ))}
 
         {types.size === 0 && (
-          <Card>
-            <Card.Title
-              title="No event types yet"
-              titleVariant='titleMedium'
-              titleStyle={calendarScreenStyles.card__title}
-              left={(props) => <Icon {...props} source="information" />}
-            />
-          </Card>
+          <Text variant="titleMedium" style={{ textAlign: 'center', marginTop: 20, color: '#888' }}>
+            No event types yet
+          </Text>
         )}
       </ScrollView>
       <FAB

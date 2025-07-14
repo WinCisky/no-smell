@@ -210,18 +210,12 @@ export async function updateTypeNotifications(
     typeName: string,
 ): Promise<void> {
     const storage = await getKvStorage();
-
-        console.log("notifications", storage.getString(`notifications-${typeName}`) || "[]");
     
     // Cancel existing notifications for this type
     await cancelAllTypeNotifications(typeName);
 
-        console.log("notifications", storage.getString(`notifications-${typeName}`) || "[]");
-
     // Set new notifications
     const notifications = await computeTypeNotifications(typeName);
-
-        console.log("notifications", storage.getString(`notifications-${typeName}`) || "[]");
     if (notifications.length > 0) {
         await setTypeNotifications(typeName, notifications);
         console.log("scheduled", storage.getString(`scheduled-${typeName}`) || "[]");
