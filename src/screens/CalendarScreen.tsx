@@ -15,7 +15,8 @@ import {
   RadioButton,
   Button,
   Dialog,
-  Portal
+  Portal,
+  useTheme
 } from 'react-native-paper';
 import { getKvStorage } from '../utility/storage';
 import { useNavigation } from '@react-navigation/native';
@@ -151,7 +152,8 @@ function CalendarScreen() {
     loadTypes(setTypes);
   }, []);
 
-  const containerStyle = { backgroundColor: 'white', padding: 20, margin: 20, borderRadius: 10 };
+  const theme = useTheme();
+  const containerStyle = { padding: 20, margin: 20, borderRadius: 10, backgroundColor: theme.colors.surface };
 
   return (
     <View style={calendarScreenStyles.container}>

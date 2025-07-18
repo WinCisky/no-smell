@@ -29,7 +29,6 @@ export const homeScreenStyles = StyleSheet.create({
 export const calendarScreenStyles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
         padding: 8
     },
     container__scroll: {
@@ -54,7 +53,6 @@ export const calendarScreenStyles = StyleSheet.create({
 export const notificationScreenStyles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f5f5f5',
         padding: 8
     },
     container__text: {

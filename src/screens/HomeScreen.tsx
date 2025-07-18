@@ -248,7 +248,7 @@ function HomeScreen() {
 
 
     return (
-        <ScrollView style={{ flex: 1, backgroundColor: '#f5f5f5' }}>
+        <ScrollView style={{ flex: 1 }}>
             <View style={{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', margin: 20 }}>
                 <Text variant="titleMedium" style={{ textAlign: 'center' }}>
                     {today.toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })}

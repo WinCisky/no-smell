@@ -161,15 +161,14 @@ function NotificationsScreen() {
             </ScrollView>
 
             {/* Add Notification Modal */}
-            <Portal>
                 <TimePickerModal
+                    animationType="fade"
                     visible={modalVisible}
                     onDismiss={() => setModalVisible(false)}
                     onConfirm={onConfirm}
                     hours={12}
                     minutes={14}
                     />
-            </Portal>
         </View>
     );
 }
