@@ -34,7 +34,7 @@ function NotificationsScreen() {
     };
 
     // Load notifications for all event types
-    const loadNotifications = async () => {
+    const loadNotifications = useCallback(async () => {
         const storage = await getKvStorage();
         const allNotifications: { [key: string]: NotificationItem[] } = {};
 
@@ -45,7 +45,7 @@ function NotificationsScreen() {
         }
 
         setNotifications(allNotifications);
-    };
+    }, [eventTypes]);
 
     // Load data when screen comes into focus
     useFocusEffect(
@@ -59,7 +59,7 @@ function NotificationsScreen() {
         if (eventTypes.size > 0) {
             loadNotifications();
         }
-    }, [eventTypes]);
+    }, [eventTypes, loadNotifications]);
 
     const handleAddNotification = (typeName: string, typeColor: string) => {
         setSelectedType({ name: typeName, color: typeColor });
@@ -92,7 +92,7 @@ function NotificationsScreen() {
             setSelectedType(null);
             setModalVisible(false);
         },
-        [setModalVisible]
+        [selectedType]
     );
 
     const handleDeleteNotification = async (typeName: string, notificationId: string) => {

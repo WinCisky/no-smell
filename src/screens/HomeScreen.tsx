@@ -3,7 +3,7 @@ import { ScrollView, View, TextStyle, StyleSheet } from 'react-native';
 import { CalendarList, AgendaEntry, AgendaSchedule, DateData } from 'react-native-calendars';
 import { MMKV, Mode } from 'react-native-mmkv'
 import { homeScreenStyles } from '../utility/styles';
-import { Card, Text, Button, Icon, Chip } from 'react-native-paper';
+import { Card, Text, Button, Icon, Chip, useTheme } from 'react-native-paper';
 import { getKvStorage } from '../utility/storage';
 import { useFocusEffect } from '@react-navigation/native';
 
@@ -11,6 +11,7 @@ const RANGE = 24;
 
 // Custom Day Component for multi-color display
 const MultiColorDay = ({ date, marking, onPress }: any) => {
+    const theme = useTheme();
     const daySize = 32;
     const dayStyle = {
         width: daySize,
@@ -22,7 +23,7 @@ const MultiColorDay = ({ date, marking, onPress }: any) => {
     };
 
     const textStyle = {
-        color: marking?.selected ? 'white' : 'black',
+        color: marking?.selected ? 'white' : theme.colors.onSurface,
         fontWeight: marking?.selected ? 'bold' as const : 'normal' as const,
         fontSize: marking?.selected ? 18 : 16,
     };
@@ -66,7 +67,7 @@ const MultiColorDay = ({ date, marking, onPress }: any) => {
                     paddingHorizontal: 4,
                     paddingVertical: 2
                 }}>
-                    <Text style={[textStyle, { color: 'black' }]}>
+                    <Text style={[textStyle, { color: theme.colors.onSurface }]}>
                         {date.day}
                     </Text>
                 </View>
@@ -84,7 +85,7 @@ const MultiColorDay = ({ date, marking, onPress }: any) => {
     } else {
         // Default day (no events)
         const backgroundColor = marking?.selected ? '#5E60CE' : 'transparent';
-        const textColor = marking?.selected ? 'white' : 'black';
+        const textColor = marking?.selected ? 'white' : theme.colors.onSurface;
 
         return (
             <View
@@ -246,6 +247,7 @@ function HomeScreen() {
         }
     }
 
+    const theme = useTheme();
 
     return (
         <ScrollView style={{ flex: 1 }}>
@@ -274,12 +276,22 @@ function HomeScreen() {
                 dayComponent={MultiColorDay}
                 renderHeader={undefined}
                 calendarHeight={undefined}
-                theme={undefined}
+                theme={{
+                    agendaKnobColor: theme.colors.primary,
+                    textSectionTitleColor: theme.colors.onSurfaceVariant,
+                    calendarBackground: theme.colors.surface,
+                }}
                 horizontal={true}
                 pagingEnabled={true}
                 staticHeader={true}
             />
 
+            <View>
+                {/* show the selected date if it's not today properly formatted */}
+                <Text style={{ color: theme.colors.onSurface, textAlign: 'center' }}>
+                    Events for {selected === formattedDate ? 'today' : new Date(selected).toLocaleDateString('en-US', { month: 'long', year: 'numeric', day: 'numeric' })}
+                </Text>
+            </View>
             {/* Show selected date events */}
             <View style={{ margin: 20 }}>
                 {!events[selected] ? (
