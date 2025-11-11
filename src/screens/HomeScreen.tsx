@@ -136,43 +136,39 @@ function HomeScreen() {
     const loadEvents = async (types: Map<string, string>) => {
         try {
             const storage = await getKvStorage();
-            const currentYear = new Date().getFullYear();
             const loadedEvents: AgendaSchedule = {};
-            const loadedMarked: { [key: string]: any } = {};            // Load events for each event type
+            const loadedMarked: { [key: string]: any } = {};
             for (const [typeName, typeColor] of types) {
-                // Load events for current year and surrounding years
-                for (let year = currentYear - 1; year <= currentYear + 2; year++) {
-                    const key = `${year}-${typeName}`;
-                    const savedDates = storage.getString(key);
+                const key = `events-${typeName}`;
+                const savedDates = storage.getString(key);
 
-                    if (savedDates) {
-                        const dates = JSON.parse(savedDates) as string[];
-                        dates.forEach(date => {
-                            // Add to events
-                            if (!loadedEvents[date]) {
-                                loadedEvents[date] = [];
-                            }
-                            loadedEvents[date].push({
-                                name: typeName,
-                                height: 80,
-                                day: date
-                            });
-
-                            // Add to marked dates
-                            if (!loadedMarked[date]) {
-                                loadedMarked[date] = {
-                                    marked: true,
-                                    colors: [],
-                                    selectedTextColor: 'white'
-                                };
-                            }
-                            
-                            // Add color to the array if not already present
-                            if (!loadedMarked[date].colors.includes(typeColor)) {
-                                loadedMarked[date].colors.push(typeColor);
-                            }
+                if (savedDates) {
+                    const dates = JSON.parse(savedDates) as string[];
+                    dates.forEach(date => {
+                        // Add to events
+                        if (!loadedEvents[date]) {
+                            loadedEvents[date] = [];
+                        }
+                        loadedEvents[date].push({
+                            name: typeName,
+                            height: 80,
+                            day: date
                         });
-                    }
+
+                        // Add to marked dates
+                        if (!loadedMarked[date]) {
+                            loadedMarked[date] = {
+                                marked: true,
+                                colors: [],
+                                selectedTextColor: 'white'
+                            };
+                        }
+                        
+                        // Add color to the array if not already present
+                        if (!loadedMarked[date].colors.includes(typeColor)) {
+                            loadedMarked[date].colors.push(typeColor);
+                        }
+                    });
                 }
             }
 

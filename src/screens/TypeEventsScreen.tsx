@@ -47,22 +47,19 @@ function TypeEventsScreen({ route, navigation }: Props) {
                 const currentYear = new Date().getFullYear();
                 const loadedMarked: { [key: string]: any } = {};
 
-                // Load events for the current year and surrounding years
-                for (let year = currentYear - 1; year <= currentYear + 2; year++) {
-                    const key = `${year}-${typeName}`;
-                    const savedDates = storage.getString(key);
-                    
-                    if (savedDates) {
-                        const dates = JSON.parse(savedDates) as string[];
-                        dates.forEach(date => {
-                            loadedMarked[date] = {
-                                selected: true,
-                                disableTouchEvent: false,
-                                selectedColor: typeColor,
-                                selectedTextColor: 'white'
-                            };
-                        });
-                    }
+                const key = `events-${typeName}`;
+                const savedDates = storage.getString(key);
+                
+                if (savedDates) {
+                    const dates = JSON.parse(savedDates) as string[];
+                    dates.forEach(date => {
+                        loadedMarked[date] = {
+                            selected: true,
+                            disableTouchEvent: false,
+                            selectedColor: typeColor,
+                            selectedTextColor: 'white'
+                        };
+                    });
                 }
 
                 if (Object.keys(loadedMarked).length > 0) {
@@ -137,23 +134,8 @@ function TypeEventsScreen({ route, navigation }: Props) {
             return;
         }
 
-        // Group by year
-        const grouped: { [key: string]: string[] } = {};
-        Object.keys(newMarked).forEach(date => {
-            const dateObj = new Date(date);
-            const year = dateObj.getFullYear();
-
-            if (!grouped[year]) {
-                grouped[year] = [];
-            }
-            grouped[year].push(date);
-        });
-
-        // Save to storage
-        for (const year in grouped) {
-            const key = `${year}-${typeName}`;
-            storage.set(key, JSON.stringify(grouped[year]));
-        }
+        const key = `events-${typeName}`;
+        storage.set(key, JSON.stringify(Object.keys(newMarked)));
 
         // Update notifications for the type
         await updateTypeNotifications(typeName);

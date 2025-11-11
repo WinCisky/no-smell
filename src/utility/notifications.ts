@@ -107,6 +107,7 @@ async function cancelAllTypeNotifications(typeName: string): Promise<void> {
     try {
         const storage = await getKvStorage();
         const notificationsForType = storage.getString(`scheduled-${typeName}`) || "[]";
+        console.log(`Cancelling notifications for type ${typeName}:`, notificationsForType);
         const notificationIds = JSON.parse(notificationsForType).map((n: { id: string }) => n.id);
 
         for (const notificationId of notificationIds) {
@@ -170,14 +171,11 @@ async function computeTypeNotifications(
 
     // Retrieve all dates for the type from storage
     const currentDate = new Date();
-    const currentYear = currentDate.getFullYear();
-    for (let year = currentYear - 1; year <= currentYear + 2; year++) {
-        const key = `${year}-${typeName}`;
-        const savedDates = storage.getString(key);
+    const key = `events-${typeName}`;
+    const savedDates = storage.getString(key);
 
-        if (savedDates) {
-            dates = JSON.parse(savedDates);
-        }
+    if (savedDates) {
+        dates = JSON.parse(savedDates);
     }
 
     if (dates.length <= 0) {
