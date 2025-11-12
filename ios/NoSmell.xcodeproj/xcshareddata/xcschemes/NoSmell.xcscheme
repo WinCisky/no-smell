@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "NoSmell.app"
-               BlueprintName = "NoSmell"
-               ReferencedContainer = "container:NoSmell.xcodeproj">
+               BuildableName = "DoAgain.app"
+               BlueprintName = "DoAgain"
+               ReferencedContainer = "container:DoAgain.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "NoSmellTests.xctest"
-               BlueprintName = "NoSmellTests"
-               ReferencedContainer = "container:NoSmell.xcodeproj">
+               BuildableName = "DoAgainTests.xctest"
+               BlueprintName = "DoAgainTests"
+               ReferencedContainer = "container:DoAgain.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "NoSmell.app"
-            BlueprintName = "NoSmell"
-            ReferencedContainer = "container:NoSmell.xcodeproj">
+            BuildableName = "DoAgain.app"
+            BlueprintName = "DoAgain"
+            ReferencedContainer = "container:DoAgain.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "NoSmell.app"
-            BlueprintName = "NoSmell"
-            ReferencedContainer = "container:NoSmell.xcodeproj">
+            BuildableName = "DoAgain.app"
+            BlueprintName = "DoAgain"
+            ReferencedContainer = "container:DoAgain.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
