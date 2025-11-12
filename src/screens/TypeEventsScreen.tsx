@@ -5,7 +5,7 @@ import { calendarScreenStyles } from '../utility/styles';
 import { StackScreenProps } from '@react-navigation/stack';
 import { CalendarList, AgendaEntry, AgendaSchedule, DateData } from 'react-native-calendars';
 import { getKvStorage } from '../utility/storage';
-import { updateTypeNotifications } from '../utility/notifications';
+import { updateTypeNotificationsChained } from '../utility/notifications';
 import { DatePickerModal } from 'react-native-paper-dates';
 
 const RANGE = 24;
@@ -137,8 +137,8 @@ function TypeEventsScreen({ route, navigation }: Props) {
         const key = `events-${typeName}`;
         storage.set(key, JSON.stringify(Object.keys(newMarked)));
 
-        // Update notifications for the type
-        await updateTypeNotifications(typeName);
+        // Update notifications for the type (chain scheduling: only next, then chain)
+        await updateTypeNotificationsChained(typeName);
 
         // Go back to the calendar screen
         navigation.goBack();

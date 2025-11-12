@@ -1,4 +1,4 @@
-import notifee, { TimestampTrigger, TriggerType, AuthorizationStatus } from '@notifee/react-native';
+import notifee, { TimestampTrigger, TriggerType, AuthorizationStatus, EventType } from '@notifee/react-native';
 import { getKvStorage } from './storage';
 
 function dateToTrigger(date: Date): TimestampTrigger {
@@ -24,13 +24,15 @@ async function schedule(
     channelId: string,
     trigger: TimestampTrigger,
     category: string,
-    message: string
+    message: string,
+    data?: Record<string, string>
 ): Promise<string> {
     // Schedule the notification
     const notificationId = await notifee.createTriggerNotification(
         {
             title: category,
             body: message,
+            data,
             android: {
                 channelId,
                 smallIcon: 'ic_launcher',
@@ -53,7 +55,8 @@ async function schedule(
 export async function scheduleNotification(
     date: Date,
     category: string,
-    message: string
+    message: string,
+    extraData?: Record<string, string>
 ): Promise<string> {
     let notificationId: string;
 
@@ -75,8 +78,8 @@ export async function scheduleNotification(
         // console.log('Channel created with ID:', channelId);
 
         const trigger = dateToTrigger(date);
-        notificationId = await schedule(channelId, trigger, category, message);
-        // console.log('Notification scheduled with ID:', notificationId);
+        notificationId = await schedule(channelId, trigger, category, message, extraData);
+        console.log('Notification scheduled with ID:', notificationId, 'for date:', date);
         return notificationId;
     } catch (error) {
         console.error('Error scheduling notification:', error);
@@ -107,48 +110,16 @@ async function cancelAllTypeNotifications(typeName: string): Promise<void> {
     try {
         const storage = await getKvStorage();
         const notificationsForType = storage.getString(`scheduled-${typeName}`) || "[]";
-        console.log(`Cancelling notifications for type ${typeName}:`, notificationsForType);
+        // console.log(`Cancelling notifications for type ${typeName}:`, notificationsForType);
         const notificationIds = JSON.parse(notificationsForType).map((n: { id: string }) => n.id);
 
         for (const notificationId of notificationIds) {
             await cancelNotification(notificationId);
         }
-        console.log(`All notifications for type ${typeName} cancelled`);
+        // console.log(`All notifications for type ${typeName} cancelled`);
     } catch (error) {
         console.error('Error cancelling notifications for type:', error);
     }
-}
-
-async function setTypeNotifications(
-    typeName: string,
-    notifications: { date: Date; category: string; message: string }[]
-): Promise<void> {
-    const storage = await getKvStorage();
-    
-    const scheduled: {
-        id: string;
-        time: Date;
-        type: string;
-        message: string;
-    }[] = [];
-
-    for (const notification of notifications) {
-        const notificationId = await scheduleNotification(
-            notification.date,
-            notification.category,
-            notification.message
-        );
-        
-        scheduled.push({
-            id: notificationId,
-            time: notification.date,
-            type: notification.category,
-            message: notification.message
-        });
-    }
-
-    // Save the notifications to storage
-    storage.set(`scheduled-${typeName}`, JSON.stringify(scheduled));
 }
 
 async function computeTypeNotifications(
@@ -167,58 +138,100 @@ async function computeTypeNotifications(
         return [];
     }
 
-    let dates: string[] = [];
-
-    // Retrieve all dates for the type from storage
-    const currentDate = new Date();
-    const key = `events-${typeName}`;
-    const savedDates = storage.getString(key);
-
-    if (savedDates) {
-        dates = JSON.parse(savedDates);
-    }
-
-    if (dates.length <= 0) {
-        console.log('No dates found for type:', typeName);
+    const eventsForType = storage.getString(`events-${typeName}`) || "[]";
+    const eventDates = JSON.parse(eventsForType) as string[];
+    if (eventDates.length === 0) {
+        console.log('No events found for type:', typeName);
         return [];
     }
 
-    // compose dates with times
+
+    // TODO: remove events in the past
+    
+    
     const notifications: { date: Date; category: string; message: string }[] = [];
-    for (const date of dates) {
-        const dateObj = new Date(date);
-        for (const event of notificationEvents) {
-            if (event.time && event.type === typeName) {
-                const [hours, minutes] = event.time.split(':').map(Number);
-                const notificationDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate(), hours, minutes);
-                notifications.push({
-                    date: notificationDate,
-                    category: event.type,
-                    message: event.message
-                });
-            }
+    for (const eventDateStr of eventDates) {
+        const eventDate = new Date(eventDateStr);
+        for (const notificationEvent of notificationEvents) {
+            const [hours, minutes] = notificationEvent.time.split(':').map(Number);
+            const notificationDate = new Date(eventDate);
+            notificationDate.setHours(hours, minutes, 0, 0);
+            notifications.push({
+                date: notificationDate,
+                category: notificationEvent.type,
+                message: notificationEvent.message || `Reminder for ${notificationEvent.type}`,
+            });
         }
     }
 
     return notifications;
 }
 
+// --- Chain scheduling (schedule-next-only) ---
 
-export async function updateTypeNotifications(
+/**
+ * Returns the next future notification for a type, sorted by soonest first.
+ */
+async function computeNextForType(
     typeName: string,
-): Promise<void> {
-    const storage = await getKvStorage();
-    
-    // Cancel existing notifications for this type
-    await cancelAllTypeNotifications(typeName);
+    after: Date = new Date()
+): Promise<{ date: Date; category: string; message: string } | null> {
+    const all = await computeTypeNotifications(typeName);
+    const next = all
+        .filter(n => n.date.getTime() > after.getTime())
+        .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
+    return next ?? null;
+}
 
-    // Set new notifications
-    const notifications = await computeTypeNotifications(typeName);
-    if (notifications.length > 0) {
-        await setTypeNotifications(typeName, notifications);
-        console.log("scheduled", storage.getString(`scheduled-${typeName}`) || "[]");
-        console.log("notifications", storage.getString(`notifications-${typeName}`) || "[]");
-    } else {
-        console.log(`No notifications to set for type: ${typeName}`);
+/**
+ * Schedule only the next notification for a given type, replacing any existing scheduled items for that type.
+ * Stores a single entry under `scheduled-${typeName}` with data needed to chain the next one.
+ */
+export async function scheduleNextForType(typeName: string, cancelPrevious: boolean = false): Promise<string | null> {
+    if (cancelPrevious) {
+        // Cancel any previously scheduled notifications for the type
+        await cancelAllTypeNotifications(typeName);
+    }
+
+    // add 30s buffer to avoid immediate rescheduling
+    const bufferDate = new Date(new Date().getTime() + 30 * 1000);
+    const next = await computeNextForType(typeName, bufferDate);
+    if (!next) {
+        const storage = await getKvStorage();
+        storage.set(`scheduled-${typeName}`, JSON.stringify([]));
+        console.log(`No future notifications to schedule for type ${typeName}`);
+        return null;
+    }
+
+    const id = await scheduleNotification(next.date, next.category, next.message, {
+        typeName,
+        scheduledTs: next.date.toISOString(),
+    });
+
+    const storage = await getKvStorage();
+    storage.set(
+        `scheduled-${typeName}`,
+        JSON.stringify([
+            { id, time: next.date, type: next.category, message: next.message },
+        ])
+    );
+
+    console.log(`Scheduled next notification for type ${typeName} with ID:`, id, 'at', next.date);
+
+    return id || null;
+}
+
+/**
+ * Helper you can use in UI code to switch from full scheduling to chain scheduling.
+ */
+export async function updateTypeNotificationsChained(typeName: string): Promise<void> {
+    await scheduleNextForType(typeName, true);
+}
+
+export function handleNotificationDelivered(event: { type: EventType; detail: { notification: { data?: Record<string, string> } } }) {
+    const data = event.detail.notification.data;
+    if (data && data.typeName) {
+        // Schedule the next notification for this type
+        scheduleNextForType(data.typeName);
     }
 }

@@ -5,6 +5,7 @@ import { notificationScreenStyles } from '../utility/styles';
 import { getKvStorage } from '../utility/storage';
 import { useFocusEffect } from '@react-navigation/native';
 import { TimePickerModal } from 'react-native-paper-dates';
+import { scheduleNextForType } from '../utility/notifications';
 
 interface NotificationItem {
     id: string;
@@ -40,7 +41,7 @@ function NotificationsScreen() {
 
         for (const typeName of eventTypes.keys()) {
             const notificationsForType = storage.getString(`notifications-${typeName}`) || "[]";
-            console.log(`Loaded notifications for ${typeName}:`, notificationsForType);
+            // console.log(`Loaded notifications for ${typeName}:`, notificationsForType);
             allNotifications[typeName] = JSON.parse(notificationsForType ?? []);
         }
 
@@ -88,6 +89,7 @@ function NotificationsScreen() {
             const notificationsForType = JSON.parse(existingNotifications) ?? [];
             notificationsForType.push(newNotification);
             storage.set(`notifications-${selectedType.name}`, JSON.stringify(notificationsForType));
+            await scheduleNextForType(selectedType.name, true);
             
             setSelectedType(null);
             setModalVisible(false);
@@ -96,9 +98,13 @@ function NotificationsScreen() {
     );
 
     const handleDeleteNotification = async (typeName: string, notificationId: string) => {
-        // TODO: Implement notification deletion logic
+        const storage = await getKvStorage();
+        const existingNotifications = storage.getString(`notifications-${typeName}`) || "[]";
+        let notificationsForType = JSON.parse(existingNotifications) ?? [];
+        notificationsForType = notificationsForType.filter((n: NotificationItem) => n.id !== notificationId);
+        storage.set(`notifications-${typeName}`, JSON.stringify(notificationsForType));
+        scheduleNextForType(typeName, true);
 
-        
         setNotifications(prev => ({
             ...prev,
             [typeName]: prev[typeName]?.filter(n => n.id !== notificationId) || []
@@ -134,8 +140,8 @@ function NotificationsScreen() {
                                 {notifications[typeName].map((notification) => (
                                     <Chip
                                         icon={(props) => <Icon {...props} source="circle" color={typeColor} />}
-                                        onPress={() => console.log('Pressed')}
-                                        onClose={() => console.log('Closed')}
+                                        onPress={() => handleDeleteNotification(typeName, notification.id)}
+                                        onClose={() => handleDeleteNotification(typeName, notification.id)}
                                         closeIcon={(props) => <Icon {...props} source="close" />}
                                         key={notification.id}
                                     >

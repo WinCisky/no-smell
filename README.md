@@ -58,6 +58,7 @@
 - [ ] fix size incoherence of bottom navigation bar for selected icon
 - [ ] remove old events after notification is sent
 - [ ] update notifications types in notification screen after adding a new type
+- [ ] sorting of notifications in notification screen by time
 
 ---
 - [ ] remove recurring notifications on notifications (callback on chip close icon)
