@@ -66,20 +66,22 @@ export async function scheduleNotification(
             return "";
         }
 
-        // Create a channel
-        const channelId = await notifee.createChannel({
-            id: 'scheduled',
-            name: 'Scheduled Notifications',
-            description: 'Channel for scheduled notifications',
-            importance: 4, // High importance for better delivery
-            sound: 'default', // Default sound for notifications
-            vibration: true, // Enable vibration
-        });
-        // console.log('Channel created with ID:', channelId);
+        const channelId = 'scheduled';
+        const channelExists = await notifee.getChannel(channelId);
+        if (!channelExists) {
+            // Create a channel
+            await notifee.createChannel({
+                id: 'scheduled',
+                name: 'Scheduled Notifications',
+                description: 'Channel for scheduled notifications',
+                importance: 4, // High importance for better delivery
+                sound: 'default', // Default sound for notifications
+                vibration: true, // Enable vibration
+            });
+        }
 
         const trigger = dateToTrigger(date);
         notificationId = await schedule(channelId, trigger, category, message, extraData);
-        console.log('Notification scheduled with ID:', notificationId, 'for date:', date);
         return notificationId;
     } catch (error) {
         console.error('Error scheduling notification:', error);
@@ -177,6 +179,7 @@ async function computeNextForType(
     after: Date = new Date()
 ): Promise<{ date: Date; category: string; message: string } | null> {
     const all = await computeTypeNotifications(typeName);
+    console.log(`All next notifications for type ${typeName}:`, all);
     const next = all
         .filter(n => n.date.getTime() > after.getTime())
         .sort((a, b) => a.date.getTime() - b.date.getTime())[0];
@@ -187,19 +190,21 @@ async function computeNextForType(
  * Schedule only the next notification for a given type, replacing any existing scheduled items for that type.
  * Stores a single entry under `scheduled-${typeName}` with data needed to chain the next one.
  */
-export async function scheduleNextForType(typeName: string, cancelPrevious: boolean = false): Promise<string | null> {
+export async function scheduleNextForType(typeName: string, cancelPrevious: boolean = false, after?: string): Promise<string | null> {
     if (cancelPrevious) {
         // Cancel any previously scheduled notifications for the type
         await cancelAllTypeNotifications(typeName);
     }
 
-    // add 30s buffer to avoid immediate rescheduling
-    const bufferDate = new Date(new Date().getTime() + 30 * 1000);
+    // max between now and after
+    const bufferDate = after ? 
+        new Date(Math.max(new Date().getTime(), new Date(after).getTime())) : 
+        new Date(new Date().getTime() + 3 * 1000);
     const next = await computeNextForType(typeName, bufferDate);
     if (!next) {
         const storage = await getKvStorage();
         storage.set(`scheduled-${typeName}`, JSON.stringify([]));
-        console.log(`No future notifications to schedule for type ${typeName}`);
+        // console.log(`No future notifications to schedule for type ${typeName}`);
         return null;
     }
 
@@ -230,8 +235,8 @@ export async function updateTypeNotificationsChained(typeName: string): Promise<
 
 export function handleNotificationDelivered(event: { type: EventType; detail: { notification: { data?: Record<string, string> } } }) {
     const data = event.detail.notification.data;
-    if (data && data.typeName) {
+    if (data && data.typeName && data.scheduledTs) {
         // Schedule the next notification for this type
-        scheduleNextForType(data.typeName);
+        scheduleNextForType(data.typeName, false, data.scheduledTs);
     }
 }

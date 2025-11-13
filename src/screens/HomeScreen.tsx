@@ -113,6 +113,7 @@ function HomeScreen() {
     const [currentMonth, setCurrentMonth] = useState(formattedDate);
     const [eventTypes, setEventTypes] = useState<Map<string, string>>(new Map());
     const [events, setEvents] = useState<AgendaSchedule>({});
+    const [notifications, setNotifications] = useState<{ [key: string]: any[] }>({});
     const [markedDates, setMarkedDates] = useState<{ [key: string]: any }>({});
     const calendarRef = useRef<any>(null);
 
@@ -179,6 +180,23 @@ function HomeScreen() {
         }
     };
 
+    const loadNotifications = async (types: Map<string, string>) => {
+        try {
+            const storage = await getKvStorage();
+            const allNotifications: { [key: string]: any[] } = {};
+
+            for (const typeName of types.keys()) {
+                const notificationsForType = storage.getString(`notifications-${typeName}`) || "[]";
+                allNotifications[typeName] = JSON.parse(notificationsForType ?? []);
+            }
+
+            console.log('Loaded notifications:', allNotifications);
+            setNotifications(allNotifications);
+        } catch (error) {
+            console.error('Error loading notifications:', error);
+        }
+    }
+
     // Load data when screen comes into focus
     useFocusEffect(
         useCallback(() => {
@@ -186,6 +204,7 @@ function HomeScreen() {
                 const types = await loadEventTypes();
                 if (types.size > 0) {
                     await loadEvents(types);
+                    await loadNotifications(types);
                 }
             };
             loadData();
@@ -297,15 +316,25 @@ function HomeScreen() {
                 ) : (
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10 }}>
                         {events[selected].map((item: AgendaEntry, index: number) => (
-                            <Chip
-                                icon={(props) => <Icon {...props} source="circle" color={eventTypes.get(item.name)} />}
-                                onPress={() => console.log('Pressed')}
-                                onClose={() => console.log('Closed')}
-                                closeIcon={(props) => <Icon {...props} source="close" />}
-                                key={index}
-                            >
-                                {item.name} 12:00 PM
-                            </Chip>
+                            // for each event, for each notification time, show a chip with the time
+                            notifications[item.name] && notifications[item.name].length > 0 ? (
+                                notifications[item.name].map((notification: any) => (
+                                    <Chip
+                                        icon={(props) => <Icon {...props} source="circle" color={eventTypes.get(item.name)} />}
+                                        onPress={() => console.log('Pressed')}
+                                        onClose={() => console.log('Closed')}
+                                        closeIcon={(props) => <Icon {...props} source="close" />}
+                                        key={`${item.name}-${notification.id}-${index}`}
+                                    >
+                                        {item.name} {notification.time}
+                                    </Chip>
+
+                                ))
+                            ) : (
+                                <Text key={`${item.name}-no-notifications-${index}`} style={{ color: '#666', fontStyle: 'italic' }}>
+                                    No notifications set for {item.name}
+                                </Text>
+                            )
                         ))}
                     </View>
                 )}
